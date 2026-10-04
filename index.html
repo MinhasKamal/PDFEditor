@@ -211,7 +211,7 @@
   </div>
 
   <div id="page-container">
-    <div class="empty-state" id="empty-state">No PDFs loaded. Please select files above.</div>
+    <div class="empty-state" id="empty-state">No PDFs loaded.</div>
   </div>
   
   <div class="loading-overlay" id="loading-overlay">Rendering...</div>
@@ -461,7 +461,7 @@
         
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = 'edited_document.pdf';
+        link.download = 'Document_from_PDFEditor_by_MinhasKamal.pdf';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
