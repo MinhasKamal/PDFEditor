@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visual PDF Editor</title>
+  
+  <!-- pdf-lib for editing and merging -->
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <!-- pdf.js for rendering thumbnails and previews -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  
+  <style>
+    /* CSS Variables for Light/Dark Mode */
+    :root {
+      --primary: #14748b;
+      --primary-hover: #24949b;
+      --danger: #ef4444;
+      --danger-hover: #b91c1c;
+      
+      /* Light Theme Defaults */
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #334155;
+      --text-muted: rgba(100, 150, 190, 0.4);
+      --text-title: #14748b;
+      --overlay: rgba(255, 255, 255, 0.9);
+      --modal-bg: rgba(0, 0, 0, 0.7);
+    }
+
+    [data-theme="dark"] {
+      /* Dark Theme Overrides */
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: rgba(90, 130, 170, 0.4);
+      --text-title: #24949b;
+      --overlay: rgba(30, 41, 59, 0.9);
+      --modal-bg: rgba(0, 0, 0, 0.85);
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 95%; margin: 0 auto; padding: 1rem;
+      background-color: var(--bg); color: var(--text);
+      transition: background-color 0.3s, color 0.3s;
+      
+      /* Flexbox layout for sticky footer */
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    header { text-align: center; margin-bottom: 2rem; display: none; }
+
+    .controls {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--card); padding: 1rem; border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2rem;
+      border: 1px solid var(--border); gap: 2.0rem;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    
+    .browse-group{ display: flex; align-items: center; gap: 0.5rem; }
+
+    .actions-group {
+      display: flex; gap: 0.5rem;
+    }
+      
+    #title{ font-weight: 700; font-size: 1.4rem; color: var(--text-title); }
+
+    /* Custom File Input Styles */
+    input[type="file"] {
+      display: none; /* Hides the default input and text */
+    }
+    
+    .btn {
+      padding: 0.5rem 1rem; border: none; border-radius: 6px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+      background-color: var(--border); color: var(--text);
+      transition: opacity 0.2s, background-color 0.3s, color 0.3s;
+      font-family: inherit;
+    }
+    .btn:hover { opacity: 0.8; }
+      
+    button { font-family: inherit; font-weight: inherit; font-size: inherit; }
+      
+    #browse-btn { padding: 0.7rem 1rem; }
+
+    #export-btn { background-color: var(--primary); color: white; padding: 0.75rem 1.5rem; }
+    #export-btn:hover:not(:disabled) { background-color: var(--primary-hover); }
+    #export-btn:disabled { background-color: var(--border); color: var(--text-muted); cursor: not-allowed; }
+
+    /* Main container flex grow pushes footer to bottom */
+    #page-container {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1.5rem; min-height: 200px; flex: 1; margin-bottom: 2rem;
+      align-content: start;
+    }
+
+    .page-item {
+      background: var(--card); border: 1px solid var(--border);
+      border-top-width: 4px; border-radius: 8px;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0.5rem; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: transform 0.1s, background-color 0.3s, border-color 0.3s;
+    }
+
+    .page-item:active { cursor: grabbing; }
+    .page-item.dragging { opacity: 0.4; transform: scale(0.95); }
+
+    .thumb-container {
+      position: relative; width: 100%; height: 160px;
+      margin-bottom: 0.5rem; border: 1px solid var(--border);
+      background-color: var(--bg); display: flex;
+      align-items: center; justify-content: center;
+      overflow: hidden; border-radius: 4px;
+    }
+
+    .thumbnail {
+      max-width: 100%; max-height: 100%; object-fit: contain;
+      transition: transform 0.2s ease;
+    }
+
+    /* Circular Overlay Buttons */
+    .action-buttons {
+      position: absolute; top: 0.25rem; right: 0.25rem;
+      display: flex; gap: 0.25rem;
+    }
+
+    .btn-circle {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 1px solid var(--border); background: var(--overlay);
+      color: var(--text); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; padding: 0; font-size: 14px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .btn-circle:hover { background: var(--card); color: var(--primary); border-color: var(--primary); }
+    .btn-circle.delete-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+    .page-meta {
+      display: flex; justify-content: space-between; width: 100%;
+      font-size: 0.75rem; color: var(--text); margin-bottom: 0.25rem;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1; text-align: center; color: var(--text-muted);
+      padding: 3rem; border: 2px dashed var(--border);
+      border-radius: 8px; pointer-events: none;
+    }
+    
+    .loading-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: var(--overlay); display: none;
+      justify-content: center; align-items: center; z-index: 10;
+      font-size: 1.5rem; font-weight: bold; color: var(--primary);
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none; position: fixed; z-index: 20;
+      left: 0; top: 0; width: 100%; height: 100%;
+      background-color: var(--modal-bg);
+      align-items: center; justify-content: center;
+    }
+    
+    .modal-content {
+      background-color: var(--card); padding: 1rem; border-radius: 8px;
+      max-width: 90vw; max-height: 90vh; overflow: auto;
+      position: relative; display: flex; flex-direction: column; align-items: center;
+    }
+    
+    .close-modal {
+      position: absolute; top: 10px; right: 15px;
+      font-size: 24px; font-weight: bold; color: var(--text);
+      cursor: pointer; background: var(--border); border-radius: 50%;
+      width: 30px; height: 30px; text-align: center; line-height: 30px;
+    }
+    
+    #preview-canvas { box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+      
+    footer {margin-top: auto; text-align: center;
+      padding-top: 1.5rem; color: var(--text-muted);
+      font-size: 0.85rem; width: 100%;
+    }
+      
+    a { color: inherit; text-decoration: inherit; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>PDF Editor</h1>
+  </header>
+
+  <div class="controls">
+    <div class="browse-group" title="Upload and merge PDFs; reorder, rotate, and delete pages">
+      <span id="title"><a href="https://github.com/MinhasKamal/PDFEditor" target="_blank">PDF Editor</a></span>
+      <label for="pdf-upload" id="browse-btn" class="btn">Browse...</label>
+      <input type="file" id="pdf-upload" accept="application/pdf" multiple>
+    </div>
+    
+    <div class="actions-group">
+      <button id="theme-toggle" class="btn" title="Toggle Dark Mode">🌙</button>
+      <button id="export-btn" class="btn" disabled>Export</button>
+    </div>
+  </div>
+
+  <div id="page-container">
+    <div class="empty-state" id="empty-state">No PDFs loaded. Please select files above.</div>
+  </div>
+  
+  <div class="loading-overlay" id="loading-overlay">Rendering...</div>
+
+  <!-- Full Resolution Preview Modal -->
+  <div id="preview-modal" class="modal">
+    <div class="modal-content">
+      <div class="close-modal" id="close-modal">&times;</div>
+      <canvas id="preview-canvas"></canvas>
+    </div>
+  </div>
+
+  <footer>
+    <a href="https://github.com/MinhasKamal/PDFEditor" target="_blank"><u>PDF Editor</u></a> by <a href="https://minhaskamal.github.io" target="_blank"><u>Minhas Kamal</u></a>
+  </footer>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const uploadInput = document.getElementById('pdf-upload');
+    const exportBtn = document.getElementById('export-btn');
+    const themeToggle = document.getElementById('theme-toggle');
+    const pageContainer = document.getElementById('page-container');
+    const emptyState = document.getElementById('empty-state');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    
+    // Modal Elements
+    const previewModal = document.getElementById('preview-modal');
+    const closeModal = document.getElementById('close-modal');
+    const previewCanvas = document.getElementById('preview-canvas');
+    const previewCtx = previewCanvas.getContext('2d');
+
+    const loadedDocuments = {};
+    let docIdCounter = 0;
+    let draggedElement = null;
+    const colorPalette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+
+    // Theme Toggle Logic
+    themeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      themeToggle.textContent = isDark ? '🌙' : '☀️';
+      themeToggle.title = isDark ? 'Toggle Dark Mode' : 'Toggle Light Mode';
+    });
+
+    uploadInput.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+
+      if (emptyState) emptyState.style.display = 'none';
+      exportBtn.disabled = true;
+      loadingOverlay.style.display = 'flex';
+
+      for (const file of files) {
+        if (file.type === 'application/pdf') {
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            
+            const pdfLibDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+            const typedarray = new Uint8Array(arrayBuffer);
+            const pdfJsDoc = await pdfjsLib.getDocument(typedarray).promise;
+            
+            const docId = `doc_${docIdCounter}`;
+            const color = colorPalette[docIdCounter % colorPalette.length];
+            
+            loadedDocuments[docId] = { pdfLib: pdfLibDoc, pdfJs: pdfJsDoc };
+            await renderVisualBlocks(pdfJsDoc, docId, file.name, color);
+            
+            docIdCounter++;
+          } catch (error) {
+            alert(`Error loading ${file.name}.`);
+            console.error(error);
+          }
+        }
+      }
+
+      loadingOverlay.style.display = 'none';
+      exportBtn.disabled = false;
+      uploadInput.value = ''; 
+    });
+
+    async function renderVisualBlocks(pdfJsDoc, docId, fileName, color) {
+      const numPages = pdfJsDoc.numPages;
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdfJsDoc.getPage(i);
+        const viewport = page.getViewport({ scale: 0.3 });
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        const imgDataUrl = canvas.toDataURL();
+        createDomBlock(imgDataUrl, docId, i - 1, fileName, color); 
+      }
+    }
+
+    function createDomBlock(imgSrc, docId, pageIndex, fileName, color) {
+      const pageDiv = document.createElement('div');
+      pageDiv.className = 'page-item';
+      pageDiv.draggable = true;
+      pageDiv.style.borderTopColor = color;
+      
+      pageDiv.dataset.docId = docId;
+      pageDiv.dataset.pageIndex = pageIndex; 
+      pageDiv.dataset.rotation = 0; 
+
+      const thumbContainer = document.createElement('div');
+      thumbContainer.className = 'thumb-container';
+
+      const img = document.createElement('img');
+      img.className = 'thumbnail';
+      img.src = imgSrc;
+      img.draggable = false;
+
+      // Create Circular Buttons Container
+      const actionBtns = document.createElement('div');
+      actionBtns.className = 'action-buttons';
+
+      const rotateBtn = document.createElement('button');
+      rotateBtn.className = 'btn-circle';
+      rotateBtn.title = "Rotate Left";
+      rotateBtn.innerHTML = '↺';
+      rotateBtn.onclick = () => {
+        let currentRot = parseInt(pageDiv.dataset.rotation, 10);
+        currentRot = (currentRot - 90);
+        pageDiv.dataset.rotation = currentRot;
+        img.style.transform = `rotate(${currentRot}deg)`;
+      };
+
+      const previewBtn = document.createElement('button');
+      previewBtn.className = 'btn-circle';
+      previewBtn.title = "Preview Full Size";
+      previewBtn.innerHTML = '👁';
+      previewBtn.onclick = () => showPreview(docId, pageIndex);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-circle delete-btn';
+      delBtn.title = "Delete Page";
+      delBtn.innerHTML = '✕';
+      delBtn.onclick = () => {
+        pageDiv.remove();
+        if (pageContainer.querySelectorAll('.page-item').length === 0) {
+          emptyState.style.display = 'block';
+          exportBtn.disabled = true;
+        }
+      };
+
+      // Append buttons to the overlay group
+      actionBtns.appendChild(rotateBtn);
+      actionBtns.appendChild(previewBtn);
+      actionBtns.appendChild(delBtn);
+      
+      thumbContainer.appendChild(img);
+      thumbContainer.appendChild(actionBtns);
+
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'page-meta';
+      let fileNameAdjusted = fileName.length > 25 ? fileName.substring(0, 22) + '...' : fileName;
+      metaDiv.innerHTML = `<span>${fileNameAdjusted}</span> <span>${pageIndex + 1}</span>`;
+
+      pageDiv.appendChild(thumbContainer);
+      pageDiv.appendChild(metaDiv);
+      pageContainer.appendChild(pageDiv);
+    }
+
+    // High-Resolution Preview Logic
+    async function showPreview(docId, pageIndex) {
+      previewModal.style.display = 'flex';
+      const pdfJsDoc = loadedDocuments[docId].pdfJs;
+      
+      try {
+        const page = await pdfJsDoc.getPage(pageIndex + 1); 
+        const viewport = page.getViewport({ scale: 1.5 }); 
+        previewCanvas.width = viewport.width;
+        previewCanvas.height = viewport.height;
+        
+        await page.render({ canvasContext: previewCtx, viewport: viewport }).promise;
+      } catch (error) {
+        console.error("Error rendering preview:", error);
+      }
+    }
+
+    closeModal.onclick = () => previewModal.style.display = 'none';
+    window.onclick = (e) => { if (e.target === previewModal) previewModal.style.display = 'none'; }
+
+    // HTML5 Drag and Drop logic
+    pageContainer.addEventListener('dragstart', (e) => {
+      const item = e.target.closest('.page-item');
+      if (item && !e.target.closest('.btn-circle')) { 
+        draggedElement = item;
+        setTimeout(() => item.classList.add('dragging'), 0);
+      } else {
+        e.preventDefault();
+      }
+    });
+
+    pageContainer.addEventListener('dragend', (e) => {
+      const item = e.target.closest('.page-item');
+      if (item) {
+        item.classList.remove('dragging');
+        draggedElement = null;
+      }
+    });
+
+    pageContainer.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (!draggedElement) return;
+      
+      const target = e.target.closest('.page-item');
+      if (target && target !== draggedElement) {
+        const rect = target.getBoundingClientRect();
+        const isAfter = (e.clientX - rect.left) / (rect.right - rect.left) > 0.5;
+        pageContainer.insertBefore(draggedElement, isAfter ? target.nextSibling : target);
+      }
+    });
+
+    // Export Logic
+    exportBtn.addEventListener('click', async () => {
+      exportBtn.textContent = 'Processing...';
+      exportBtn.disabled = true;
+
+      try {
+        const remainingItems = [...pageContainer.querySelectorAll('.page-item')];
+        if (remainingItems.length === 0) return;
+
+        const mergedPdf = await PDFLib.PDFDocument.create();
+        
+        for (const item of remainingItems) {
+          const docId = item.dataset.docId;
+          const pageIndex = parseInt(item.dataset.pageIndex);
+          const userRotation = parseInt(item.dataset.rotation, 10);
+          
+          const sourceDoc = loadedDocuments[docId].pdfLib;
+          const [copiedPage] = await mergedPdf.copyPages(sourceDoc, [pageIndex]);
+          
+          if (userRotation !== 0) {
+            const currentAngle = copiedPage.getRotation().angle;
+            copiedPage.setRotation(PDFLib.degrees(currentAngle + userRotation));
+          }
+
+          mergedPdf.addPage(copiedPage);
+        }
+        
+        const pdfBytes = await mergedPdf.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'edited_document.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        alert("An error occurred during export.");
+        console.error(error);
+      } finally {
+        exportBtn.textContent = 'Export';
+        exportBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
