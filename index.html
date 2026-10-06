@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Visual PDF Editor</title>
+  <title>PDF Salon</title>
   
   <!-- pdf-lib for editing and merging -->
   <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
@@ -135,7 +135,7 @@
       width: 28px; height: 28px; border-radius: 50%;
       border: 1px solid var(--border); background: var(--overlay);
       color: var(--text); display: flex; align-items: center; justify-content: center;
-      cursor: pointer; padding: 0; font-size: 14px;
+      cursor: pointer; padding: 0; font-size: 18px; font-weight: bold;
       box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
     
@@ -144,12 +144,12 @@
 
     .page-meta {
       display: flex; justify-content: space-between; width: 100%;
-      font-size: 0.75rem; color: var(--text); margin-bottom: 0.25rem;
+      font-size: 0.85rem; color: var(--text); margin-bottom: 0.25rem;
     }
 
     .empty-state {
       grid-column: 1 / -1; text-align: center; color: var(--text-muted);
-      padding: 3rem; border: 2px dashed var(--border);
+      padding: 5rem; border: 2px dashed var(--border);
       border-radius: 8px; pointer-events: none;
     }
     
@@ -198,9 +198,9 @@
   </header>
 
   <div class="controls">
-    <div class="browse-group" title="Upload and merge PDFs; reorder, rotate, and delete pages">
-      <span id="title"><a href="https://github.com/MinhasKamal/PDFEditor" target="_blank">PDF Editor</a></span>
-      <label for="pdf-upload" id="browse-btn" class="btn">Browse...</label>
+    <div class="browse-group" title="Rearrange, Rotate, Delete, and Merge PDF Pages">
+      <span id="title"><a href="https://github.com/MinhasKamal/PDFSalon" target="_blank">PDF Salon</a></span>
+      <label for="pdf-upload" id="browse-btn" class="btn">Add...</label>
       <input type="file" id="pdf-upload" accept="application/pdf" multiple>
     </div>
     
@@ -225,7 +225,7 @@
   </div>
 
   <footer>
-    <a href="https://github.com/MinhasKamal/PDFEditor" target="_blank"><u>PDF Editor</u></a> by <a href="https://minhaskamal.github.io" target="_blank"><u>Minhas Kamal</u></a>
+    <a href="https://github.com/MinhasKamal/PDFSalon" target="_blank"><u>PDF Salon</u></a> by <a href="https://minhaskamal.github.io" target="_blank"><u>Minhas Kamal</u></a>
   </footer>
 
   <script>
@@ -370,7 +370,7 @@
 
       const metaDiv = document.createElement('div');
       metaDiv.className = 'page-meta';
-      let fileNameAdjusted = fileName.length > 25 ? fileName.substring(0, 22) + '...' : fileName;
+      let fileNameAdjusted = fileName.length > 18 ? fileName.substring(0, 15) + '...' : fileName;
       metaDiv.innerHTML = `<span>${fileNameAdjusted}</span> <span>${pageIndex + 1}</span>`;
 
       pageDiv.appendChild(thumbContainer);
@@ -385,7 +385,7 @@
       
       try {
         const page = await pdfJsDoc.getPage(pageIndex + 1); 
-        const viewport = page.getViewport({ scale: 1.5 }); 
+        const viewport = page.getViewport({ scale: 1.0 }); 
         previewCanvas.width = viewport.width;
         previewCanvas.height = viewport.height;
         
@@ -461,7 +461,7 @@
         
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = 'Document_from_PDFEditor_by_MinhasKamal.pdf';
+        link.download = 'Document_from_PDFSalon_by_MinhasKamal.pdf';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
