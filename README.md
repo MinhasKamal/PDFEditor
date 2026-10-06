@@ -1,5 +1,5 @@
-# PDFEditor
-### An Online PDF Editor
+# PDF Salon
+### Rearrange, Rotate, Delete, and Merge PDF Pages
 
 <img width="1911" height="950" alt="image" src="https://github.com/user-attachments/assets/e458cf17-5112-4546-b6a9-527d41a75626" />
 
