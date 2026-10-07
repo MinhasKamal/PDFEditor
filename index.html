@@ -149,7 +149,7 @@
       font-size: 0; line-height: 0; margin: 0; padding: 0; 
     }
     #preview-canvas { 
-      display: block; 
+      display: block; max-width: 100%;
       width: auto; height: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
     }
 
@@ -439,7 +439,7 @@
       try {
         const page = await pdfJsDoc.getPage(pageIndex + 1); 
         const userRotation = parseInt(pageDiv.dataset.rotation, 10) || 0;
-        const viewport = page.getViewport({ scale: 1.2, rotation: (page.rotate + userRotation) % 360 }); 
+        const viewport = page.getViewport({ scale: 1.5, rotation: (page.rotate + userRotation) % 360 }); 
         
         previewCanvas.width = viewport.width; previewCanvas.height = viewport.height;
         await page.render({ canvasContext: previewCtx, viewport: viewport }).promise;
