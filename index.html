@@ -5,100 +5,66 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF Salon</title>
   
-  <!-- pdf-lib for editing and merging -->
   <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-  <!-- pdf.js for rendering thumbnails and previews -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   
   <style>
-    /* CSS Variables for Light/Dark Mode */
     :root {
-      --primary: #14748b;
-      --primary-hover: #24949b;
-      --danger: #ef4444;
-      --danger-hover: #b91c1c;
-      
-      /* Light Theme Defaults */
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --border: #e2e8f0;
-      --text: #334155;
-      --text-muted: rgba(100, 150, 190, 0.4);
-      --text-title: #14748b;
-      --overlay: rgba(255, 255, 255, 0.9);
-      --modal-bg: rgba(0, 0, 0, 0.7);
+      --primary: #14748b; --primary-hover: #24949b;
+      --danger: #ef4444; --danger-hover: #b91c1c;
+      --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0;
+      --text: #334155; --text-muted: rgba(100, 150, 190, 0.4);
+      --text-title: #14748b; --overlay: rgba(255, 255, 255, 0.9);
+      --modal-bg: rgba(0, 0, 0, 0.8);
     }
 
     [data-theme="dark"] {
-      /* Dark Theme Overrides */
-      --bg: #0f172a;
-      --card: #1e293b;
-      --border: #334155;
-      --text: #f8fafc;
-      --text-muted: rgba(90, 130, 170, 0.4);
-      --text-title: #24949b;
-      --overlay: rgba(30, 41, 59, 0.9);
-      --modal-bg: rgba(0, 0, 0, 0.85);
+      --bg: #0f172a; --card: #1e293b; --border: #334155;
+      --text: #f8fafc; --text-muted: rgba(90, 130, 170, 0.4);
+      --text-title: #24949b; --overlay: rgba(30, 41, 59, 0.9);
+      --modal-bg: rgba(0, 0, 0, 0.9);
     }
 
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      max-width: 95%; margin: 0 auto; padding: 1rem;
+      max-width: 96%; margin: 0 auto; padding: 1rem;
       background-color: var(--bg); color: var(--text);
       transition: background-color 0.3s, color 0.3s;
-      
-      /* Flexbox layout for sticky footer */
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      box-sizing: border-box;
+      display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box;
     }
 
-    header { text-align: center; margin-bottom: 2rem; display: none; }
+    header { display: none; }
 
     .controls {
       display: flex; justify-content: space-between; align-items: center;
       background: var(--card); padding: 1rem; border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem;
       border: 1px solid var(--border); gap: 2.0rem;
-      transition: background-color 0.3s, border-color 0.3s;
     }
     
-    .browse-group{ display: flex; align-items: center; gap: 0.5rem; }
-
-    .actions-group {
-      display: flex; gap: 0.5rem;
-    }
-      
-    #title{ font-weight: 700; font-size: 1.4rem; color: var(--text-title); }
-
-    /* Custom File Input Styles */
-    input[type="file"] {
-      display: none; /* Hides the default input and text */
-    }
+    .browse-group { display: flex; align-items: center; gap: 0.5rem; }
+    .actions-group { display: flex; gap: 0.5rem; }
+    #title { font-weight: 700; font-size: 1.4rem; color: var(--text-title); }
+    input[type="file"] { display: none; }
     
     .btn {
       padding: 0.5rem 1rem; border: none; border-radius: 6px;
-      font-weight: 600; cursor: pointer; transition: all 0.2s;
-      background-color: var(--border); color: var(--text);
-      transition: opacity 0.2s, background-color 0.3s, color 0.3s;
-      font-family: inherit;
+      font-weight: 600; cursor: pointer; background-color: var(--border);
+      color: var(--text); font-family: inherit; transition: opacity 0.2s;
     }
     .btn:hover { opacity: 0.8; }
-      
-    button { font-family: inherit; font-weight: inherit; font-size: inherit; }
-      
-    #browse-btn { padding: 0.7rem 1rem; }
 
+	button { font-family: inherit; font-weight: inherit; font-size: inherit; }
+
+	#browse-btn { padding: 0.7rem 1rem; }
+	  
     #export-btn { background-color: var(--primary); color: white; padding: 0.75rem 1.5rem; }
     #export-btn:hover:not(:disabled) { background-color: var(--primary-hover); }
     #export-btn:disabled { background-color: var(--border); color: var(--text-muted); cursor: not-allowed; }
 
-    /* Main container flex grow pushes footer to bottom */
     #page-container {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 1.5rem; min-height: 200px; flex: 1; margin-bottom: 2rem;
-      align-content: start;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1.0rem; flex: 1; margin-bottom: 2rem; align-content: start;
     }
 
     .page-item {
@@ -106,127 +72,155 @@
       border-top-width: 4px; border-radius: 8px;
       display: flex; flex-direction: column; align-items: center;
       padding: 0.5rem; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      transition: transform 0.1s, background-color 0.3s, border-color 0.3s;
     }
-
-    .page-item:active { cursor: grabbing; }
     .page-item.dragging { opacity: 0.4; transform: scale(0.95); }
 
     .thumb-container {
-      position: relative; width: 100%; height: 160px;
-      margin-bottom: 0.5rem; border: 1px solid var(--border);
-      background-color: var(--bg); display: flex;
-      align-items: center; justify-content: center;
-      overflow: hidden; border-radius: 4px;
-    }
-
-    .thumbnail {
-      max-width: 100%; max-height: 100%; object-fit: contain;
-      transition: transform 0.2s ease;
-    }
-
-    /* Circular Overlay Buttons */
-    .action-buttons {
-      position: absolute; top: 0.25rem; right: 0.25rem;
-      display: flex; gap: 0.25rem;
-    }
-
-    .btn-circle {
-      width: 28px; height: 28px; border-radius: 50%;
-      border: 1px solid var(--border); background: var(--overlay);
-      color: var(--text); display: flex; align-items: center; justify-content: center;
-      cursor: pointer; padding: 0; font-size: 18px; font-weight: bold;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      position: relative; width: 100%; height: 160px; margin-bottom: 0.5rem;
+      background-color: var(--bg); display: flex; align-items: center; justify-content: center;
+      border-radius: 4px; border: 1px solid var(--border); overflow: hidden;
     }
     
+    .thumb-wrapper {
+      position: relative; display: inline-flex;
+      align-items: center; justify-content: center;
+      transition: transform 0.2s ease;
+    }
+    .thumbnail { display: block; max-width: 100%; max-height: 160px; object-fit: contain; }
+    .thumb-overlays { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+    .action-buttons { position: absolute; top: 0.25rem; right: 0.25rem; display: flex; gap: 0.25rem; z-index: 10; }
+    .btn-circle {
+      width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border);
+      background: var(--overlay); color: var(--text); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; padding: 0; font-size: 18px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
     .btn-circle:hover { background: var(--card); color: var(--primary); border-color: var(--primary); }
     .btn-circle.delete-btn:hover { color: var(--danger); border-color: var(--danger); }
 
-    .page-meta {
-      display: flex; justify-content: space-between; width: 100%;
-      font-size: 0.85rem; color: var(--text); margin-bottom: 0.25rem;
-    }
+    .page-meta { display: flex; justify-content: space-between; width: 100%; font-size: 0.85rem; color: var(--text); }
+    .empty-state { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 5rem; border: 2px dashed var(--border); border-radius: 8px; }
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay); display: none; justify-content: center; align-items: center; z-index: 10; font-size: 1.5rem; font-weight: bold; color: var(--primary); }
 
-    .empty-state {
-      grid-column: 1 / -1; text-align: center; color: var(--text-muted);
-      padding: 5rem; border: 2px dashed var(--border);
-      border-radius: 8px; pointer-events: none;
-    }
-    
-    .loading-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: var(--overlay); display: none;
-      justify-content: center; align-items: center; z-index: 10;
-      font-size: 1.5rem; font-weight: bold; color: var(--primary);
-    }
-
-    /* Modal Styles */
     .modal {
-      display: none; position: fixed; z-index: 20;
-      left: 0; top: 0; width: 100%; height: 100%;
-      background-color: var(--modal-bg);
-      align-items: center; justify-content: center;
+      display: none; position: fixed; z-index: 20; left: 0; top: 0; width: 100%; height: 100%;
+      background-color: var(--modal-bg); align-items: center; justify-content: center; flex-direction: column;
     }
+    .modal-toolbar {
+      background: var(--card); padding: 0.5rem 1rem; border-radius: 8px; margin-bottom: 0.5rem;
+      display: flex; gap: 1rem; align-items: center; width: 90vw; max-width: 95vw; overflow-x: auto;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex-shrink: 0;
+    }
+    .modal-toolbar button, .modal-toolbar select, .modal-toolbar input[type="number"] {
+      background: var(--bg); color: var(--text); font-size: 0.9rem; padding: 0.4rem 0.6rem; 
+      border: 1px solid var(--border); border-radius: 4px; cursor: pointer;
+    }
+    .modal-toolbar button:hover { background: var(--border); }
     
+    #overlay-props {
+      display: none; align-items: center; gap: 0.5rem; 
+      border-left: 1px solid var(--border); padding-left: 1rem; margin-left: 0.5rem;
+    }
+    .prop-btn { font-weight: bold; min-width: 32px; text-align: center; }
+    .prop-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* Navigation Buttons */
+    .nav-btn {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      width: 44px; height: 44px; border-radius: 50%; font-size: 20px; font-weight: bold;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); z-index: 30;
+      transition: background 0.2s, color 0.2s, opacity 0.2s;
+    }
+    .nav-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+    .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+    #prev-page-btn { left: 2vw; }
+    #next-page-btn { right: 2vw; }
+
     .modal-content {
-      background-color: var(--card); padding: 1rem; border-radius: 8px;
-      max-width: 90vw; max-height: 90vh; overflow: auto;
+      background-color: transparent; padding: 0; border-radius: 8px;
+      max-width: 100vw; max-height: 90vh; overflow: auto;
       position: relative; display: flex; flex-direction: column; align-items: center;
     }
     
-    .close-modal {
-      position: absolute; top: 10px; right: 15px;
-      font-size: 24px; font-weight: bold; color: var(--text);
-      cursor: pointer; background: var(--border); border-radius: 50%;
-      width: 30px; height: 30px; text-align: center; line-height: 30px;
+    #preview-wrapper { 
+      position: relative; display: inline-block; 
+      font-size: 0; line-height: 0; margin: 0; padding: 0; 
     }
+    #preview-canvas { 
+      display: block; 
+      width: auto; height: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+    }
+
+    .overlay-item {
+      position: absolute; cursor: move; user-select: none;
+      border: 2px dashed transparent; display: flex; align-items: center; justify-content: center;
+      transform-origin: center;
+    }
+    .overlay-item:hover { border-color: var(--border); }
+    .overlay-item.active { border-color: var(--primary); z-index: 5; }
     
-    #preview-canvas { box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-      
-    footer {margin-top: auto; text-align: center;
-      padding-top: 1.5rem; color: var(--text-muted);
-      font-size: 0.85rem; width: 100%;
+    .overlay-text { font-size: 24px; color: #ef4444; white-space: nowrap; line-height: 1; margin: 0; padding: 0; font-family: Arial, sans-serif;}
+    .overlay-img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+    
+    .overlay-close {
+      position: absolute; top: -12px; right: -12px; background: var(--danger); color: white; border-radius: 50%;
+      width: 24px; height: 24px; font-size: 14px; display: none; align-items: center; justify-content: center; cursor: pointer;
     }
+    .overlay-item.active .overlay-close, .overlay-item:hover .overlay-close { display: flex; }
       
+    footer { margin-top: auto; text-align: center; padding-top: 1.5rem; color: var(--text-muted); font-size: 0.85rem; }
     a { color: inherit; text-decoration: inherit; }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>PDF Editor</h1>
-  </header>
-
   <div class="controls">
-    <div class="browse-group" title="Rearrange, Rotate, Delete, and Merge PDF Pages">
+    <div class="browse-group" title="Rearrange, Rotate, Edit, Delete, and Merge PDF Pages">
       <span id="title"><a href="https://github.com/MinhasKamal/PDFSalon" target="_blank">PDF Salon</a></span>
-      <label for="pdf-upload" id="browse-btn" class="btn">Add...</label>
+      <label for="pdf-upload" id="browse-btn" class="btn" title="Add PDF Files">Add...</label>
       <input type="file" id="pdf-upload" accept="application/pdf" multiple>
     </div>
-    
     <div class="actions-group">
-      <button id="theme-toggle" class="btn" title="Toggle Dark Mode">🌙</button>
-      <button id="export-btn" class="btn" disabled>Export</button>
+      <button id="theme-toggle" class="btn" title="Toggle Theme">☀️</button>
+      <button id="export-btn" class="btn" title="Export to PDF" disabled>Export</button>
     </div>
   </div>
 
-  <div id="page-container">
-    <div class="empty-state" id="empty-state">No PDFs loaded.</div>
-  </div>
-  
+  <div id="page-container"><div class="empty-state" id="empty-state">No PDFs loaded.</div></div>
   <div class="loading-overlay" id="loading-overlay">Rendering...</div>
 
-  <!-- Full Resolution Preview Modal -->
+  <!-- Modal -->
   <div id="preview-modal" class="modal">
-    <div class="modal-content">
-      <div class="close-modal" id="close-modal">&times;</div>
-      <canvas id="preview-canvas"></canvas>
+    <button id="prev-page-btn" class="nav-btn" title="Previous Page">❮</button>
+    <button id="next-page-btn" class="nav-btn" title="Next Page">❯</button>
+    
+    <div class="modal-toolbar">
+      <button id="add-text-btn" title="Insert Text">TXT</button>
+      <button id="add-image-btn" title="Insert Image">IMG</button>
+      
+      <div id="overlay-props">
+        <select id="prop-font" style="display:none;">
+          <option value="Helvetica">Arial / Helvetica</option>
+          <option value="TimesRoman">Times New Roman</option>
+          <option value="Courier">Monospace / Courier</option>
+        </select>
+        <button id="prop-bold" class="prop-btn" style="display:none;" title="Bold"><b>B</b></button>
+        <button id="prop-italic" class="prop-btn" style="display:none;" title="Italic"><i>I</i></button>
+        <button id="prop-underline" class="prop-btn" style="display:none;" title="Underline"><u>U</u></button>
+        <input type="color" id="prop-color" value="#ef4444" title="Text Color" style="display:none; padding:0; width:30px; height:30px;">
+        <input type="number" id="prop-size-text" min="0" max="999" value="24" title="Font Size" style="width: 60px; display:none;">
+        <input type="range" id="prop-size-img" min="20" max="1000" value="150" title="Image Size" style="display:none; cursor:pointer;">
+      </div>
+      
+      <input type="file" id="overlay-img-upload" accept="image/png, image/jpeg" style="display: none;">
+      <button id="save-modal-btn" title="Save and Close Editor" style="background: var(--primary); color: white; margin-left: auto; border:none;">✕</button>
     </div>
+    <div class="modal-content"><div id="preview-wrapper"><canvas id="preview-canvas"></canvas></div></div>
   </div>
 
-  <footer>
-    <a href="https://github.com/MinhasKamal/PDFSalon" target="_blank"><u>PDF Salon</u></a> by <a href="https://minhaskamal.github.io" target="_blank"><u>Minhas Kamal</u></a>
-  </footer>
+  <footer><a href="https://github.com/MinhasKamal/PDFSalon" target="_blank"><u>PDF Salon</u></a> by <a href="https://minhaskamal.github.io" target="_blank"><u>Minhas Kamal</u></a></footer>
 
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -238,240 +232,497 @@
     const emptyState = document.getElementById('empty-state');
     const loadingOverlay = document.getElementById('loading-overlay');
     
-    // Modal Elements
     const previewModal = document.getElementById('preview-modal');
-    const closeModal = document.getElementById('close-modal');
+    const previewWrapper = document.getElementById('preview-wrapper');
     const previewCanvas = document.getElementById('preview-canvas');
     const previewCtx = previewCanvas.getContext('2d');
+    
+    const propPanel = document.getElementById('overlay-props');
+    const propSizeText = document.getElementById('prop-size-text');
+    const propSizeImg = document.getElementById('prop-size-img');
+    const propColor = document.getElementById('prop-color');
+    const propFont = document.getElementById('prop-font');
+    const propBold = document.getElementById('prop-bold');
+    const propItalic = document.getElementById('prop-italic');
+    const propUnderline = document.getElementById('prop-underline');
+
+    const prevPageBtn = document.getElementById('prev-page-btn');
+    const nextPageBtn = document.getElementById('next-page-btn');
 
     const loadedDocuments = {};
-    let docIdCounter = 0;
-    let draggedElement = null;
+    let docIdCounter = 0; let draggedElement = null;
+    let currentEditPageDiv = null; let activeOverlay = null; 
+
     const colorPalette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 
-    // Theme Toggle Logic
+    function visualToNormal(vX, vY, rot) {
+      if (rot === 90) return { x: vY, y: 1 - vX };
+      if (rot === 180) return { x: 1 - vX, y: 1 - vY };
+      if (rot === 270) return { x: 1 - vY, y: vX };
+      return { x: vX, y: vY };
+    }
+    function normalToVisual(nX, nY, rot) {
+      if (rot === 90) return { x: 1 - nY, y: nX };
+      if (rot === 180) return { x: 1 - nX, y: 1 - nY };
+      if (rot === 270) return { x: nY, y: 1 - nX };
+      return { x: nX, y: nY };
+    }
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? { r: parseInt(result[1], 16) / 255, g: parseInt(result[2], 16) / 255, b: parseInt(result[3], 16) / 255 } : { r: 0.93, g: 0.26, b: 0.26 };
+    }
+
+    const pdfLibFontMap = {
+      'Helvetica': { normal: PDFLib.StandardFonts.Helvetica, bold: PDFLib.StandardFonts.HelveticaBold, italic: PDFLib.StandardFonts.HelveticaOblique, boldItalic: PDFLib.StandardFonts.HelveticaBoldOblique },
+      'TimesRoman': { normal: PDFLib.StandardFonts.TimesRoman, bold: PDFLib.StandardFonts.TimesRomanBold, italic: PDFLib.StandardFonts.TimesRomanItalic, boldItalic: PDFLib.StandardFonts.TimesRomanBoldItalic },
+      'Courier': { normal: PDFLib.StandardFonts.Courier, bold: PDFLib.StandardFonts.CourierBold, italic: PDFLib.StandardFonts.CourierOblique, boldItalic: PDFLib.StandardFonts.CourierBoldOblique }
+    };
+
     themeToggle.addEventListener('click', () => {
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-      themeToggle.textContent = isDark ? '🌙' : '☀️';
-      themeToggle.title = isDark ? 'Toggle Dark Mode' : 'Toggle Light Mode';
+      themeToggle.textContent = isDark ? '☀️' : '🌙';
     });
 
     uploadInput.addEventListener('change', async (e) => {
       const files = Array.from(e.target.files);
       if (files.length === 0) return;
-
       if (emptyState) emptyState.style.display = 'none';
-      exportBtn.disabled = true;
-      loadingOverlay.style.display = 'flex';
+      exportBtn.disabled = true; loadingOverlay.style.display = 'flex';
 
       for (const file of files) {
         if (file.type === 'application/pdf') {
           try {
             const arrayBuffer = await file.arrayBuffer();
-            
             const pdfLibDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-            const typedarray = new Uint8Array(arrayBuffer);
-            const pdfJsDoc = await pdfjsLib.getDocument(typedarray).promise;
+            const pdfJsDoc = await pdfjsLib.getDocument(new Uint8Array(arrayBuffer)).promise;
             
             const docId = `doc_${docIdCounter}`;
-            const color = colorPalette[docIdCounter % colorPalette.length];
-            
             loadedDocuments[docId] = { pdfLib: pdfLibDoc, pdfJs: pdfJsDoc };
-            await renderVisualBlocks(pdfJsDoc, docId, file.name, color);
-            
+            await renderVisualBlocks(pdfJsDoc, docId, file.name, colorPalette[docIdCounter % colorPalette.length]);
             docIdCounter++;
-          } catch (error) {
-            alert(`Error loading ${file.name}.`);
-            console.error(error);
-          }
+          } catch (error) { alert(`Error loading ${file.name}.`); }
         }
       }
-
-      loadingOverlay.style.display = 'none';
-      exportBtn.disabled = false;
-      uploadInput.value = ''; 
+      loadingOverlay.style.display = 'none'; exportBtn.disabled = false; uploadInput.value = ''; 
     });
 
     async function renderVisualBlocks(pdfJsDoc, docId, fileName, color) {
-      const numPages = pdfJsDoc.numPages;
-      for (let i = 1; i <= numPages; i++) {
+      for (let i = 1; i <= pdfJsDoc.numPages; i++) {
         const page = await pdfJsDoc.getPage(i);
         const viewport = page.getViewport({ scale: 0.3 });
         const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-        const imgDataUrl = canvas.toDataURL();
-        createDomBlock(imgDataUrl, docId, i - 1, fileName, color); 
+        canvas.width = viewport.width; canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+        createDomBlock(canvas.toDataURL(), docId, i - 1, fileName, color); 
       }
     }
 
     function createDomBlock(imgSrc, docId, pageIndex, fileName, color) {
       const pageDiv = document.createElement('div');
-      pageDiv.className = 'page-item';
-      pageDiv.draggable = true;
-      pageDiv.style.borderTopColor = color;
+      pageDiv.className = 'page-item'; pageDiv.draggable = true; pageDiv.style.borderTopColor = color;
+      pageDiv.dataset.docId = docId; pageDiv.dataset.pageIndex = pageIndex; 
+      pageDiv.dataset.rotation = 0; pageDiv.dataset.overlays = "[]"; 
+
+      const thumbContainer = document.createElement('div'); thumbContainer.className = 'thumb-container';
+      const thumbWrapper = document.createElement('div'); thumbWrapper.className = 'thumb-wrapper';
+      const img = document.createElement('img'); img.className = 'thumbnail'; img.src = imgSrc; img.draggable = false;
+      const thumbOverlays = document.createElement('div'); thumbOverlays.className = 'thumb-overlays';
+      thumbWrapper.append(img, thumbOverlays);
+
+      const actionBtns = document.createElement('div'); actionBtns.className = 'action-buttons';
       
-      pageDiv.dataset.docId = docId;
-      pageDiv.dataset.pageIndex = pageIndex; 
-      pageDiv.dataset.rotation = 0; 
-
-      const thumbContainer = document.createElement('div');
-      thumbContainer.className = 'thumb-container';
-
-      const img = document.createElement('img');
-      img.className = 'thumbnail';
-      img.src = imgSrc;
-      img.draggable = false;
-
-      // Create Circular Buttons Container
-      const actionBtns = document.createElement('div');
-      actionBtns.className = 'action-buttons';
-
-      const rotateBtn = document.createElement('button');
-      rotateBtn.className = 'btn-circle';
-      rotateBtn.title = "Rotate Left";
-      rotateBtn.innerHTML = '↺';
+      const rotateBtn = document.createElement('button'); rotateBtn.className = 'btn-circle'; rotateBtn.innerHTML = '⭮'; rotateBtn.title = 'Right Rotate';
       rotateBtn.onclick = () => {
-        let currentRot = parseInt(pageDiv.dataset.rotation, 10);
-        currentRot = (currentRot - 90);
-        pageDiv.dataset.rotation = currentRot;
-        img.style.transform = `rotate(${currentRot}deg)`;
+        let currentRot = (parseInt(pageDiv.dataset.rotation, 10) + 90) % 360;
+        pageDiv.dataset.rotation = currentRot; 
+        thumbWrapper.style.transform = `rotate(${currentRot}deg)`;
       };
 
-      const previewBtn = document.createElement('button');
-      previewBtn.className = 'btn-circle';
-      previewBtn.title = "Preview Full Size";
-      previewBtn.innerHTML = '👁';
-      previewBtn.onclick = () => showPreview(docId, pageIndex);
+      const previewBtn = document.createElement('button'); previewBtn.className = 'btn-circle'; previewBtn.innerHTML = '🖉'; previewBtn.title = 'Edit';
+      previewBtn.onclick = () => showPreview(docId, pageIndex, pageDiv);
 
-      const delBtn = document.createElement('button');
-      delBtn.className = 'btn-circle delete-btn';
-      delBtn.title = "Delete Page";
-      delBtn.innerHTML = '✕';
+      const delBtn = document.createElement('button'); delBtn.className = 'btn-circle delete-btn'; delBtn.innerHTML = '✕'; delBtn.title = 'Delete';
       delBtn.onclick = () => {
         pageDiv.remove();
         if (pageContainer.querySelectorAll('.page-item').length === 0) {
-          emptyState.style.display = 'block';
-          exportBtn.disabled = true;
+          emptyState.style.display = 'block'; exportBtn.disabled = true;
         }
       };
 
-      // Append buttons to the overlay group
-      actionBtns.appendChild(rotateBtn);
-      actionBtns.appendChild(previewBtn);
-      actionBtns.appendChild(delBtn);
-      
-      thumbContainer.appendChild(img);
-      thumbContainer.appendChild(actionBtns);
+      actionBtns.append(rotateBtn, previewBtn, delBtn);
+      thumbContainer.append(thumbWrapper, actionBtns);
 
-      const metaDiv = document.createElement('div');
-      metaDiv.className = 'page-meta';
-      let fileNameAdjusted = fileName.length > 18 ? fileName.substring(0, 15) + '...' : fileName;
+      const metaDiv = document.createElement('div'); metaDiv.className = 'page-meta';
+      let fileNameAdjusted = fileName.length > 15 ? fileName.substring(0, 12) + '...' : fileName;
       metaDiv.innerHTML = `<span>${fileNameAdjusted}</span> <span>${pageIndex + 1}</span>`;
 
-      pageDiv.appendChild(thumbContainer);
-      pageDiv.appendChild(metaDiv);
+      pageDiv.append(thumbContainer, metaDiv);
       pageContainer.appendChild(pageDiv);
     }
 
-    // High-Resolution Preview Logic
-    async function showPreview(docId, pageIndex) {
-      previewModal.style.display = 'flex';
-      const pdfJsDoc = loadedDocuments[docId].pdfJs;
+    function getAdjacentPage(direction) {
+      const items = [...pageContainer.querySelectorAll('.page-item')];
+      const currentIndex = items.indexOf(currentEditPageDiv);
+      if(currentIndex === -1) return null;
+      return items[currentIndex + direction];
+    }
+
+    function updateNavButtons() {
+      prevPageBtn.disabled = !getAdjacentPage(-1);
+      nextPageBtn.disabled = !getAdjacentPage(1);
+    }
+
+    function saveOverlaysToPage(pageDiv) {
+      if(!pageDiv) return;
+      const overlays = [];
+      const currentRot = parseInt(pageDiv.dataset.rotation, 10) || 0;
+      const pw = previewCanvas.clientWidth; const ph = previewCanvas.clientHeight;
       
+      const normW = (currentRot % 180 === 0) ? pw : ph;
+      const normH = (currentRot % 180 === 0) ? ph : pw;
+
+      document.querySelectorAll('.overlay-item').forEach(el => {
+        const isText = el.classList.contains('text-overlay-item');
+        const vX = el.offsetLeft / pw; const vY = el.offsetTop / ph; 
+        
+        const normalCoords = visualToNormal(vX, vY, currentRot);
+        const vRot = parseInt(el.dataset.visualRot || 0, 10);
+        const normRot = (vRot - currentRot + 360) % 360;
+        
+        overlays.push({
+          type: isText ? 'text' : 'image',
+          value: isText ? el.querySelector('span').innerText : el.querySelector('img').src,
+          normX: normalCoords.x, normY: normalCoords.y, normRot: normRot,
+          normWidthPct: el.offsetWidth / normW, normHeightPct: el.offsetHeight / normH,
+          normSizePct: isText ? (parseFloat(el.dataset.fontSize || 24) / normH) : null,
+          color: isText ? el.dataset.color || '#ef4444' : null,
+          fontFamily: isText ? el.dataset.fontFamily || 'Helvetica' : null,
+          isBold: isText ? el.dataset.isBold === 'true' : false,
+          isItalic: isText ? el.dataset.isItalic === 'true' : false,
+          isUnderline: isText ? el.dataset.isUnderline === 'true' : false,
+        });
+      });
+      pageDiv.dataset.overlays = JSON.stringify(overlays);
+      renderThumbOverlays(pageDiv);
+    }
+
+    prevPageBtn.onclick = () => {
+      const prev = getAdjacentPage(-1);
+      if(prev) {
+        saveOverlaysToPage(currentEditPageDiv);
+        showPreview(prev.dataset.docId, parseInt(prev.dataset.pageIndex), prev);
+      }
+    };
+
+    nextPageBtn.onclick = () => {
+      const next = getAdjacentPage(1);
+      if(next) {
+        saveOverlaysToPage(currentEditPageDiv);
+        showPreview(next.dataset.docId, parseInt(next.dataset.pageIndex), next);
+      }
+    };
+
+    document.getElementById('save-modal-btn').onclick = () => {
+      saveOverlaysToPage(currentEditPageDiv);
+      previewModal.style.display = 'none';
+    };
+
+    async function showPreview(docId, pageIndex, pageDiv) {
+      currentEditPageDiv = pageDiv;
+      previewModal.style.display = 'flex';
+      setActiveOverlay(null);
+      updateNavButtons();
+      document.querySelectorAll('.overlay-item').forEach(el => el.remove());
+
+      const pdfJsDoc = loadedDocuments[docId].pdfJs;
       try {
         const page = await pdfJsDoc.getPage(pageIndex + 1); 
-        const viewport = page.getViewport({ scale: 1.0 }); 
-        previewCanvas.width = viewport.width;
-        previewCanvas.height = viewport.height;
+        const userRotation = parseInt(pageDiv.dataset.rotation, 10) || 0;
+        const viewport = page.getViewport({ scale: 1.2, rotation: (page.rotate + userRotation) % 360 }); 
         
+        previewCanvas.width = viewport.width; previewCanvas.height = viewport.height;
         await page.render({ canvasContext: previewCtx, viewport: viewport }).promise;
-      } catch (error) {
-        console.error("Error rendering preview:", error);
+
+        const pw = previewCanvas.clientWidth; const ph = previewCanvas.clientHeight;
+        const normH = (userRotation % 180 === 0) ? ph : pw; 
+        const normW = (userRotation % 180 === 0) ? pw : ph; 
+
+        const savedOverlays = JSON.parse(pageDiv.dataset.overlays || "[]");
+        savedOverlays.forEach(ov => {
+          const vCoords = normalToVisual(ov.normX, ov.normY, userRotation);
+          const vRot = (ov.normRot + userRotation) % 360;
+          
+          const fontSizePx = ov.normSizePct ? (ov.normSizePct * normH) : 24;
+          const widthPx = ov.normWidthPct ? (ov.normWidthPct * normW) : 150;
+          const heightPx = ov.normHeightPct ? (ov.normHeightPct * normH) : null;
+
+          addDraggableOverlay(ov.value, ov.type, vCoords.x, vCoords.y, vRot, fontSizePx, ov.color, widthPx, heightPx, ov.fontFamily, ov.isBold, ov.isItalic, ov.isUnderline);
+        });
+      } catch (error) { console.error("Preview error:", error); }
+    }
+
+    function setActiveOverlay(overlay) {
+      if(activeOverlay) activeOverlay.classList.remove('active');
+      activeOverlay = overlay;
+      if(activeOverlay) activeOverlay.classList.add('active');
+      updatePropsUI();
+    }
+
+    function updatePropsUI() {
+      if(!activeOverlay) { propPanel.style.display = 'none'; return; }
+      propPanel.style.display = 'flex';
+      const isText = activeOverlay.classList.contains('text-overlay-item');
+      
+      [propColor, propFont, propBold, propItalic, propUnderline].forEach(el => el.style.display = isText ? 'block' : 'none');
+      
+      propSizeText.style.display = isText ? 'block' : 'none';
+      propSizeImg.style.display = isText ? 'none' : 'block';
+
+      if(isText) {
+        propColor.value = activeOverlay.dataset.color || '#ef4444';
+        propSizeText.value = Math.round(parseFloat(activeOverlay.dataset.fontSize || 24));
+        propFont.value = activeOverlay.dataset.fontFamily || 'Helvetica';
+        propBold.classList.toggle('active', activeOverlay.dataset.isBold === 'true');
+        propItalic.classList.toggle('active', activeOverlay.dataset.isItalic === 'true');
+        propUnderline.classList.toggle('active', activeOverlay.dataset.isUnderline === 'true');
+      } else {
+        propSizeImg.value = activeOverlay.offsetWidth;
       }
     }
 
-    closeModal.onclick = () => previewModal.style.display = 'none';
-    window.onclick = (e) => { if (e.target === previewModal) previewModal.style.display = 'none'; }
+    propSizeText.oninput = (e) => {
+      if(!activeOverlay || !activeOverlay.classList.contains('text-overlay-item')) return;
+      let val = parseInt(e.target.value);
+      if (isNaN(val) || val < 0) val = 0;
+      activeOverlay.dataset.fontSize = val; activeOverlay.querySelector('span').style.fontSize = val + 'px';
+    };
 
-    // HTML5 Drag and Drop logic
+    propSizeImg.oninput = (e) => {
+      if(!activeOverlay || activeOverlay.classList.contains('text-overlay-item')) return;
+      const val = parseInt(e.target.value) || 50;
+      activeOverlay.style.width = val + 'px';
+    };
+
+    propColor.oninput = (e) => {
+      if(activeOverlay && activeOverlay.classList.contains('text-overlay-item')) {
+        activeOverlay.dataset.color = e.target.value; activeOverlay.querySelector('span').style.color = e.target.value;
+      }
+    };
+
+    propFont.onchange = (e) => {
+      if(activeOverlay && activeOverlay.classList.contains('text-overlay-item')) {
+        activeOverlay.dataset.fontFamily = e.target.value;
+        activeOverlay.querySelector('span').style.fontFamily = e.target.value === 'TimesRoman' ? '"Times New Roman", Times, serif' : e.target.value === 'Courier' ? 'monospace' : 'Arial, Helvetica, sans-serif';
+      }
+    };
+
+    const toggleProp = (btn, prop, cssProp, cssTrue, cssFalse) => {
+      btn.onclick = () => {
+        if(!activeOverlay || !activeOverlay.classList.contains('text-overlay-item')) return;
+        const isTrue = activeOverlay.dataset[prop] !== 'true';
+        activeOverlay.dataset[prop] = isTrue;
+        activeOverlay.querySelector('span').style[cssProp] = isTrue ? cssTrue : cssFalse;
+        btn.classList.toggle('active', isTrue);
+      };
+    };
+
+    toggleProp(propBold, 'isBold', 'fontWeight', 'bold', 'normal');
+    toggleProp(propItalic, 'isItalic', 'fontStyle', 'italic', 'normal');
+    toggleProp(propUnderline, 'isUnderline', 'textDecoration', 'underline', 'none');
+
+    previewWrapper.onmousedown = (e) => { if(e.target === previewWrapper || e.target === previewCanvas) setActiveOverlay(null); };
+
+    function renderThumbOverlays(pageDiv) {
+      const container = pageDiv.querySelector('.thumb-overlays');
+      const imgEl = pageDiv.querySelector('.thumbnail');
+      const currentRot = parseInt(pageDiv.dataset.rotation, 10) || 0;
+      container.innerHTML = '';
+      
+      const imgW = imgEl.clientWidth; const imgH = imgEl.clientHeight;
+      const unrotW = (currentRot % 180 === 0) ? imgW : imgH;
+      const unrotH = (currentRot % 180 === 0) ? imgH : imgW;
+
+      JSON.parse(pageDiv.dataset.overlays || '[]').forEach(ov => {
+        const el = document.createElement(ov.type === 'text' ? 'span' : 'img');
+        el.style.position = 'absolute';
+        el.style.left = (ov.normX * 100) + '%'; 
+        el.style.top = (ov.normY * 100) + '%';
+        el.style.transform = `translate(-50%, -50%) rotate(${ov.normRot}deg)`;
+        
+        if(ov.type === 'text') {
+          el.innerText = ov.value; el.style.color = ov.color;
+          el.style.fontSize = (ov.normSizePct * unrotH) + 'px'; 
+          el.style.fontFamily = ov.fontFamily === 'TimesRoman' ? '"Times New Roman", Times, serif' : ov.fontFamily === 'Courier' ? 'monospace' : 'Arial, Helvetica, sans-serif';
+          el.style.fontWeight = ov.isBold ? 'bold' : 'normal'; el.style.fontStyle = ov.isItalic ? 'italic' : 'normal';
+          el.style.textDecoration = ov.isUnderline ? 'underline' : 'none';
+          el.style.whiteSpace = 'nowrap'; el.style.lineHeight = '1';
+        } else {
+          el.src = ov.value; 
+          el.style.width = (ov.normWidthPct * unrotW) + 'px';
+          el.style.height = (ov.normHeightPct * unrotH) + 'px';
+        }
+        container.appendChild(el);
+      });
+    }
+
+    document.getElementById('add-text-btn').onclick = () => { const text = prompt("Enter text:"); if(text) addDraggableOverlay(text, 'text', 0.5, 0.5, 0); };
+    document.getElementById('add-image-btn').onclick = () => document.getElementById('overlay-img-upload').click();
+
+    document.getElementById('overlay-img-upload').onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => addDraggableOverlay(e.target.result, 'image', 0.5, 0.5, 0);
+        reader.readAsDataURL(file);
+      }
+      e.target.value = ''; 
+    };
+
+    function addDraggableOverlay(content, type, vX, vY, vRot, fontSize = 24, color = '#ef4444', widthPx = 150, heightPx = null, fontFamily = 'Helvetica', isBold = false, isItalic = false, isUnderline = false) {
+      const wrapper = document.createElement('div');
+      wrapper.className = `overlay-item ${type}-overlay-item`;
+      wrapper.dataset.visualRot = vRot;
+      
+      const closeBtn = document.createElement('div'); closeBtn.className = 'overlay-close'; closeBtn.innerHTML = '✕'; closeBtn.title = 'Remove';
+      closeBtn.onclick = (e) => { e.stopPropagation(); wrapper.remove(); setActiveOverlay(null); };
+      wrapper.appendChild(closeBtn);
+
+      if(type === 'text') {
+        const span = document.createElement('span'); span.className = 'overlay-text'; span.innerText = content;
+        span.style.fontSize = fontSize + 'px'; span.style.color = color;
+        span.style.fontFamily = fontFamily === 'TimesRoman' ? '"Times New Roman", Times, serif' : fontFamily === 'Courier' ? 'monospace' : 'Arial, Helvetica, sans-serif';
+        span.style.fontWeight = isBold ? 'bold' : 'normal'; span.style.fontStyle = isItalic ? 'italic' : 'normal'; span.style.textDecoration = isUnderline ? 'underline' : 'none';
+        
+        wrapper.dataset.fontSize = fontSize; wrapper.dataset.color = color; wrapper.dataset.fontFamily = fontFamily; 
+        wrapper.dataset.isBold = isBold; wrapper.dataset.isItalic = isItalic; wrapper.dataset.isUnderline = isUnderline;
+        wrapper.appendChild(span);
+      } else {
+        const img = document.createElement('img'); img.className = 'overlay-img'; img.src = content;
+        wrapper.style.width = widthPx + 'px'; 
+        if(heightPx) wrapper.style.height = heightPx + 'px';
+        wrapper.appendChild(img);
+      }
+
+      previewWrapper.appendChild(wrapper);
+      wrapper.style.left = (vX * previewCanvas.clientWidth) + 'px';
+      wrapper.style.top = (vY * previewCanvas.clientHeight) + 'px';
+      wrapper.style.transform = `translate(-50%, -50%) rotate(${vRot}deg)`;
+      setActiveOverlay(wrapper);
+
+      let startX = 0, startY = 0;
+      wrapper.onmousedown = (e) => {
+        if(e.target === closeBtn) return;
+        e.preventDefault(); setActiveOverlay(wrapper);
+        startX = e.clientX - wrapper.offsetLeft; startY = e.clientY - wrapper.offsetTop;
+        document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+        document.onmousemove = (e) => {
+          e.preventDefault(); 
+          wrapper.style.left = (e.clientX - startX) + "px"; wrapper.style.top = (e.clientY - startY) + "px";
+        };
+      };
+    }
+
     pageContainer.addEventListener('dragstart', (e) => {
       const item = e.target.closest('.page-item');
-      if (item && !e.target.closest('.btn-circle')) { 
-        draggedElement = item;
-        setTimeout(() => item.classList.add('dragging'), 0);
-      } else {
-        e.preventDefault();
-      }
+      if (item && !e.target.closest('.btn-circle')) { draggedElement = item; setTimeout(() => item.classList.add('dragging'), 0); } 
+      else { e.preventDefault(); }
     });
-
     pageContainer.addEventListener('dragend', (e) => {
-      const item = e.target.closest('.page-item');
-      if (item) {
-        item.classList.remove('dragging');
-        draggedElement = null;
-      }
+      if (draggedElement) { draggedElement.classList.remove('dragging'); draggedElement = null; }
     });
-
     pageContainer.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      if (!draggedElement) return;
-      
+      e.preventDefault(); if (!draggedElement) return;
       const target = e.target.closest('.page-item');
       if (target && target !== draggedElement) {
-        const rect = target.getBoundingClientRect();
-        const isAfter = (e.clientX - rect.left) / (rect.right - rect.left) > 0.5;
-        pageContainer.insertBefore(draggedElement, isAfter ? target.nextSibling : target);
+        pageContainer.insertBefore(draggedElement, ((e.clientX - target.getBoundingClientRect().left) / target.offsetWidth > 0.5) ? target.nextSibling : target);
       }
     });
 
-    // Export Logic
     exportBtn.addEventListener('click', async () => {
-      exportBtn.textContent = 'Processing...';
-      exportBtn.disabled = true;
+      exportBtn.textContent = 'Processing...'; exportBtn.disabled = true;
 
       try {
         const remainingItems = [...pageContainer.querySelectorAll('.page-item')];
-        if (remainingItems.length === 0) return;
-
         const mergedPdf = await PDFLib.PDFDocument.create();
         
         for (const item of remainingItems) {
           const docId = item.dataset.docId;
-          const pageIndex = parseInt(item.dataset.pageIndex);
-          const userRotation = parseInt(item.dataset.rotation, 10);
-          
           const sourceDoc = loadedDocuments[docId].pdfLib;
-          const [copiedPage] = await mergedPdf.copyPages(sourceDoc, [pageIndex]);
+          const [copiedPage] = await mergedPdf.copyPages(sourceDoc, [parseInt(item.dataset.pageIndex)]);
           
-          if (userRotation !== 0) {
-            const currentAngle = copiedPage.getRotation().angle;
-            copiedPage.setRotation(PDFLib.degrees(currentAngle + userRotation));
-          }
+          const inherentRot = copiedPage.getRotation().angle;
+          const userRotation = parseInt(item.dataset.rotation, 10);
+          copiedPage.setRotation(PDFLib.degrees((inherentRot + userRotation) % 360));
 
+          const overlays = JSON.parse(item.dataset.overlays || "[]");
+          if (overlays.length > 0) {
+            const { width: pdfW, height: pdfH } = copiedPage.getSize();
+            
+            for (const ov of overlays) {
+              const theta = -ov.normRot * Math.PI / 180;
+              const pdfX = ov.normX * pdfW;
+              const pdfY = (1 - ov.normY) * pdfH;
+              
+              if (ov.type === 'text') {
+                const rgb = hexToRgb(ov.color);
+                let fontStyleStr = 'normal';
+                if (ov.isBold && ov.isItalic) fontStyleStr = 'boldItalic';
+                else if (ov.isBold) fontStyleStr = 'bold';
+                else if (ov.isItalic) fontStyleStr = 'italic';
+                
+                const customFont = await mergedPdf.embedFont(pdfLibFontMap[ov.fontFamily || 'Helvetica'][fontStyleStr]);
+                const pdfSize = ov.normSizePct * pdfH;
+                const textW = customFont.widthOfTextAtSize(ov.value, pdfSize);
+                
+                const blX_offset = -textW / 2;
+                const blY_offset = -(pdfSize * 0.25); 
+                
+                const blX = pdfX + blX_offset * Math.cos(theta) - blY_offset * Math.sin(theta);
+                const blY = pdfY + blX_offset * Math.sin(theta) + blY_offset * Math.cos(theta);
+
+                copiedPage.drawText(ov.value, {
+                  x: blX, y: blY, size: pdfSize, font: customFont, 
+                  color: PDFLib.rgb(rgb.r, rgb.g, rgb.b), rotate: PDFLib.degrees(-ov.normRot)
+                });
+
+                if(ov.isUnderline) {
+                  const lineOffset = pdfSize * 0.15;
+                  const lSx = pdfX + blX_offset * Math.cos(theta) - (blY_offset - lineOffset) * Math.sin(theta);
+                  const lSy = pdfY + blX_offset * Math.sin(theta) + (blY_offset - lineOffset) * Math.cos(theta);
+                  const lEx = pdfX + (blX_offset + textW) * Math.cos(theta) - (blY_offset - lineOffset) * Math.sin(theta);
+                  const lEy = pdfY + (blX_offset + textW) * Math.sin(theta) + (blY_offset - lineOffset) * Math.cos(theta);
+                  
+                  copiedPage.drawLine({
+                    start: { x: lSx, y: lSy }, end: { x: lEx, y: lEy },
+                    thickness: Math.max(1, pdfSize * 0.05), color: PDFLib.rgb(rgb.r, rgb.g, rgb.b)
+                  });
+                }
+              } else if (ov.type === 'image') {
+                let embeddedImg = ov.value.includes('image/jpeg') ? await mergedPdf.embedJpg(ov.value) : await mergedPdf.embedPng(ov.value);
+                const imgW = ov.normWidthPct * pdfW;
+                const imgH = ov.normHeightPct * pdfH;
+                
+                const blX_offset = -imgW / 2;
+                const blY_offset = -imgH / 2;
+                
+                const blX = pdfX + blX_offset * Math.cos(theta) - blY_offset * Math.sin(theta);
+                const blY = pdfY + blX_offset * Math.sin(theta) + blY_offset * Math.cos(theta);
+
+                copiedPage.drawImage(embeddedImg, { 
+                  x: blX, y: blY, width: imgW, height: imgH, rotate: PDFLib.degrees(-ov.normRot) 
+                });
+              }
+            }
+          }
           mergedPdf.addPage(copiedPage);
         }
         
-        const pdfBytes = await mergedPdf.save();
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'Document_from_PDFSalon_by_MinhasKamal.pdf';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (error) {
-        alert("An error occurred during export.");
-        console.error(error);
-      } finally {
-        exportBtn.textContent = 'Export';
-        exportBtn.disabled = false;
-      }
+        const blob = new Blob([await mergedPdf.save()], { type: 'application/pdf' });
+        const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
+        link.download = 'Document_from_PDFSalon_by_MinhasKamal.pdf'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      } catch (error) { alert("An error occurred during export."); console.error(error);
+      } finally { exportBtn.textContent = 'Export'; exportBtn.disabled = false; }
     });
   </script>
 </body>
